@@ -9,11 +9,11 @@ import android.content.pm.PackageManager
 import android.database.Cursor
 import android.net.Uri
 import android.os.Build
-import android.os.Handler
 import android.provider.MediaStore
 import android.util.Log
 import kotlinx.android.synthetic.main.activity_main.*
 import java.util.*
+import android.os.Handler
 
 
 class MainActivity : AppCompatActivity() {
@@ -40,7 +40,7 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        //Check the permission.
+        //Check user's permission.
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             if (checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED) {
                 //Being allowed.
@@ -59,103 +59,118 @@ class MainActivity : AppCompatActivity() {
 
         playpauseButton.setOnClickListener {
             //After 2sec from you tapped this button, this app display each images in gerallry for 2 sec.
+            if (checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED) {
+                // 許可されている
+                slideshowToggler = !slideshowToggler
 
-            slideshowToggler = !slideshowToggler
+                Log.d("slideshowToggler : ", slideshowToggler.toString())
 
-            Log.d("slideshowToggler : ", slideshowToggler.toString())
+                if (slideshowToggler) {
+                    playpauseButton.text = "停止"
 
-            if (slideshowToggler) {
-                playpauseButton.text = "停止"
-
-
-                mTimer = Timer()
-                mTimer!!.schedule(object : TimerTask() {
+                    mTimer = Timer()
+                    mTimer!!.schedule(object : TimerTask() {
                     override fun run() {
                         Log.d("ANDROID", "URI :" + imageUri.toString())
                         mHandler.post {
-                            imageView.setImageURI(imageUri)
-                        }
+                                imageView.setImageURI(imageUri)
+                            }
                         if (cursor!!.moveToNext()) {
 //                            cursor!!.moveToNext()  <- .moveToNext() had been already excuted. This code cause the error.
                             fieldIndex = cursor!!.getColumnIndex(MediaStore.Images.Media._ID)
                             id = cursor!!.getLong(fieldIndex!!)
                             imageUri = ContentUris.withAppendedId(
-                                MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
-                                id!!
-                            )
-
+                                        MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
+                                        id!!)
                         } else {
                             cursor!!.moveToFirst()
                             fieldIndex = cursor!!.getColumnIndex(MediaStore.Images.Media._ID)
                             id = cursor!!.getLong(fieldIndex!!)
                             imageUri = ContentUris.withAppendedId(
-                                MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
-                                id!!
-                            )
-
+                                        MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
+                                        id!!)
+                            }
                         }
+                    }, 2000, 2000)
+                } else {
+                    if (mTimer != null) {
+                        mTimer!!.cancel()
+                        mTimer = null
+                        playpauseButton.text = "再生"
                     }
-                }, 2000, 2000)
-            } else {
-                if (mTimer != null) {
-                    mTimer!!.cancel()
-                    mTimer = null
-                    playpauseButton.text = "再生"
                 }
+            } else {
+                // 許可されていない
+                    Log.d("ANDROID","You are not allowed.")
             }
+
         }
 
         nextButton.setOnClickListener {
             //This button is unable to tap when slideshow is going on.
             //When you tap this button, this app display next image.
-            if (!slideshowToggler) {
-                if (cursor!!.moveToNext()) {
-                    fieldIndex = cursor!!.getColumnIndex(MediaStore.Images.Media._ID)
-                    id = cursor!!.getLong(fieldIndex!!)
-                    imageUri = ContentUris.withAppendedId(
-                        MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
-                        id!!
-                    )
-                    Log.d("ANDROID", "URI :" + imageUri.toString())
-                    imageView.setImageURI(imageUri)
-                } else {
-                    cursor!!.moveToFirst()
-                    fieldIndex = cursor!!.getColumnIndex(MediaStore.Images.Media._ID)
-                    id = cursor!!.getLong(fieldIndex!!)
-                    imageUri = ContentUris.withAppendedId(
-                        MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
-                        id!!
-                    )
-                    Log.d("ANDROID", "URI :" + imageUri.toString())
-                    imageView.setImageURI(imageUri)
+
+            if (checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED) {
+                // 許可されている
+                if (!slideshowToggler) {
+                    if (cursor!!.moveToNext()) {
+                        fieldIndex = cursor!!.getColumnIndex(MediaStore.Images.Media._ID)
+                        id = cursor!!.getLong(fieldIndex!!)
+                        imageUri = ContentUris.withAppendedId(
+                            MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
+                            id!!
+                        )
+                        Log.d("ANDROID", "URI :" + imageUri.toString())
+                        imageView.setImageURI(imageUri)
+                    } else {
+                        cursor!!.moveToFirst()
+                        fieldIndex = cursor!!.getColumnIndex(MediaStore.Images.Media._ID)
+                        id = cursor!!.getLong(fieldIndex!!)
+                        imageUri = ContentUris.withAppendedId(
+                            MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
+                            id!!
+                        )
+                        Log.d("ANDROID", "URI :" + imageUri.toString())
+                        imageView.setImageURI(imageUri)
+                    }
                 }
+            } else {
+                // 許可されていない
+                Log.d("ANDROID","You are not allowed.")
             }
         }
 
         backButton.setOnClickListener {
             //This button is unable to tap when slideshow is going on.
             //When you tap this button, this app display previous image.
-            if (!slideshowToggler) {
-                if (cursor!!.moveToPrevious()) {
-                    fieldIndex = cursor!!.getColumnIndex(MediaStore.Images.Media._ID)
-                    id = cursor!!.getLong(fieldIndex!!)
-                    imageUri = ContentUris.withAppendedId(
-                        MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
-                        id!!
-                    )
-                    Log.d("ANDROID", "URI :" + imageUri.toString())
-                    imageView.setImageURI(imageUri)
-                } else {
-                    cursor!!.moveToLast()
-                    fieldIndex = cursor!!.getColumnIndex(MediaStore.Images.Media._ID)
-                    id = cursor!!.getLong(fieldIndex!!)
-                    imageUri = ContentUris.withAppendedId(
-                        MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
-                        id!!
-                    )
-                    Log.d("ANDROID", "URI :" + imageUri.toString())
-                    imageView.setImageURI(imageUri)
+
+            if (checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED) {
+                // 許可されている
+                if (!slideshowToggler) {
+                    if (cursor!!.moveToPrevious()) {
+                        fieldIndex = cursor!!.getColumnIndex(MediaStore.Images.Media._ID)
+                        id = cursor!!.getLong(fieldIndex!!)
+                        imageUri = ContentUris.withAppendedId(
+                            MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
+                            id!!
+                        )
+                        Log.d("ANDROID", "URI :" + imageUri.toString())
+                        imageView.setImageURI(imageUri)
+                    } else {
+                        cursor!!.moveToLast()
+                        fieldIndex = cursor!!.getColumnIndex(MediaStore.Images.Media._ID)
+                        id = cursor!!.getLong(fieldIndex!!)
+                        imageUri = ContentUris.withAppendedId(
+                            MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
+                            id!!
+                        )
+                        Log.d("ANDROID", "URI :" + imageUri.toString())
+                        imageView.setImageURI(imageUri)
+                    }
                 }
+            } else {
+                // 許可されていない
+                Log.d("ANDROID","You are not allowed.")
             }
         }
     }
